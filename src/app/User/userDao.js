@@ -1,11 +1,10 @@
-
 // 새롭게 추가한 함수를 아래 부분에서 export 해줘야 외부의 Provider, Service 등에서 사용가능합니다.
 
 // 모든 유저 조회
 async function selectUser(connection) {
   const selectUserListQuery = `
-                SELECT email, nickname 
-                FROM UserInfo;
+                SELECT email, userId 
+                FROM User;
                 `;
   const [userRows] = await connection.query(selectUserListQuery);
   return userRows;
@@ -14,8 +13,8 @@ async function selectUser(connection) {
 // 이메일로 회원 조회
 async function selectUserEmail(connection, email) {
   const selectUserEmailQuery = `
-                SELECT email, nickname 
-                FROM UserInfo 
+                SELECT email, userId 
+                FROM User 
                 WHERE email = ?;
                 `;
   const [emailRows] = await connection.query(selectUserEmailQuery, email);
@@ -25,10 +24,10 @@ async function selectUserEmail(connection, email) {
 // userId 회원 조회
 async function selectUserId(connection, userId) {
   const selectUserIdQuery = `
-                 SELECT id, email, nickname 
-                 FROM UserInfo 
-                 WHERE id = ?;
-                 `;
+                SELECT name, email, userId 
+                FROM User
+                WHERE userId = ?;
+                `;
   const [userRow] = await connection.query(selectUserIdQuery, userId);
   return userRow;
 }
@@ -36,8 +35,8 @@ async function selectUserId(connection, userId) {
 // 유저 생성
 async function insertUserInfo(connection, insertUserInfoParams) {
   const insertUserInfoQuery = `
-        INSERT INTO UserInfo(email, password, nickname)
-        VALUES (?, ?, ?);
+        INSERT INTO User (username, password, email, userId)
+        VALUES (?, ?, ?, ?);
     `;
   const insertUserInfoRow = await connection.query(
     insertUserInfoQuery,
@@ -50,12 +49,12 @@ async function insertUserInfo(connection, insertUserInfoParams) {
 // 패스워드 체크
 async function selectUserPassword(connection, selectUserPasswordParams) {
   const selectUserPasswordQuery = `
-        SELECT email, nickname, password
-        FROM UserInfo 
+        SELECT email, userId, password
+        FROM User 
         WHERE email = ? AND password = ?;`;
   const selectUserPasswordRow = await connection.query(
-      selectUserPasswordQuery,
-      selectUserPasswordParams
+    selectUserPasswordQuery,
+    selectUserPasswordParams
   );
 
   return selectUserPasswordRow;
@@ -65,24 +64,23 @@ async function selectUserPassword(connection, selectUserPasswordParams) {
 async function selectUserAccount(connection, email) {
   const selectUserAccountQuery = `
         SELECT status, id
-        FROM UserInfo 
+        FROM User 
         WHERE email = ?;`;
   const selectUserAccountRow = await connection.query(
-      selectUserAccountQuery,
-      email
+    selectUserAccountQuery,
+    email
   );
   return selectUserAccountRow[0];
 }
 
-async function updateUserInfo(connection, id, nickname) {
+async function updateUserInfo(connection, id, userId) {
   const updateUserQuery = `
-  UPDATE UserInfo 
-  SET nickname = ?
+  UPDATE User 
+  SET userId = ?
   WHERE id = ?;`;
   const updateUserRow = await connection.query(updateUserQuery, [nickname, id]);
   return updateUserRow[0];
 }
-
 
 module.exports = {
   selectUser,
