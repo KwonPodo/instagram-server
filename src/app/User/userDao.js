@@ -1,9 +1,10 @@
+const { logger } = require("../../../config/winston.js");
 // 새롭게 추가한 함수를 아래 부분에서 export 해줘야 외부의 Provider, Service 등에서 사용가능합니다.
 
 // 모든 유저 조회
 async function selectUser(connection) {
   const selectUserListQuery = `
-                SELECT email, userId 
+                SELECT username, userIdx, email, userId 
                 FROM User;
                 `;
   const [userRows] = await connection.query(selectUserListQuery);
@@ -13,7 +14,7 @@ async function selectUser(connection) {
 // 이메일로 회원 조회
 async function selectUserEmail(connection, email) {
   const selectUserEmailQuery = `
-                SELECT email, userId 
+                SELECT username, userIdx, email, userId 
                 FROM User 
                 WHERE email = ?;
                 `;
@@ -24,7 +25,7 @@ async function selectUserEmail(connection, email) {
 // userId 회원 조회
 async function selectUserId(connection, userId) {
   const selectUserIdQuery = `
-                SELECT name, email, userId 
+                SELECT username, userIdx, email, userId 
                 FROM User
                 WHERE userId = ?;
                 `;
@@ -32,18 +33,39 @@ async function selectUserId(connection, userId) {
   return userRow;
 }
 
+// username 회원 조회
+async function selectUserName(connection, username) {
+  const selectUserNameQuery = `
+                SELECT username, userIdx, email, userId
+                FROM User
+                WHERE username = ?;
+                `;
+  const [userRow] = await connection.query(selectUserNameQuery, username);
+  return userRow;
+}
+
 // 유저 생성
 async function insertUserInfo(connection, insertUserInfoParams) {
   const insertUserInfoQuery = `
-        INSERT INTO User (username, password, email, userId)
-        VALUES (?, ?, ?, ?);
+        INSERT INTO User (username, password, email, userId, birthDate, profileImgUrl)
+        VALUES (?, ?, ?, ?, ?, ?);
     `;
   const insertUserInfoRow = await connection.query(
     insertUserInfoQuery,
     insertUserInfoParams
   );
-
   return insertUserInfoRow;
+}
+
+// 유저 탈퇴(삭제 by userId)
+async function delUserById(connection, userId) {
+  const deleteUserInfoQuery = `
+          UPDATE User
+          SET status = 'D'
+          WHERE userId = ?;
+          `;
+  const delUserInfo = await connection.query(deleteUserInfoQuery, userId);
+  return delUserInfo;
 }
 
 // 패스워드 체크
@@ -63,7 +85,7 @@ async function selectUserPassword(connection, selectUserPasswordParams) {
 // 유저 계정 상태 체크 (jwt 생성 위해 id 값도 가져온다.)
 async function selectUserAccount(connection, email) {
   const selectUserAccountQuery = `
-        SELECT status, id
+        SELECT status, userId
         FROM User 
         WHERE email = ?;`;
   const selectUserAccountRow = await connection.query(
@@ -86,8 +108,10 @@ module.exports = {
   selectUser,
   selectUserEmail,
   selectUserId,
-  insertUserInfo,
   selectUserPassword,
+  selectUserName,
   selectUserAccount,
+  insertUserInfo,
+  delUserById,
   updateUserInfo,
 };

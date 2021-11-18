@@ -1,32 +1,78 @@
 const { pool } = require("../../../config/database.js");
 const postDao = require("./postDao.js");
-const logger = require("../../../config/winston.js");
+const { logger } = require("../../../config/winston.js");
 const { errResponse, response } = require("../../../config/response.js");
 const baseResponse = require("../../../config/baseResponseStatus.js");
 
 // Provider : process READ logics
 
-exports.retrievePostList = async function (userId) {
+exports.retrievePostList = async function () {
   try {
-    // distribute logic into two ways depending on whether userId param is given or not
-    if (!userId) {
-      // Connecting into DB
-      const connection = await pool.getConnection(async (conn) => conn);
-      // Get Dao Query answers
-      const postListResult = await postDao.selectPost(connection);
-      // Release connection
-      connection.release();
+    const connection = await pool.getConnection(async (conn) => conn);
+    const getPostListResult = await postDao.selectPost(connection);
+    connection.release();
 
-      return postListResult;
-    } else {
-      const connection = await pool.getConnection(async (conn) => conn);
-      const postResult = await postDao.selectPostId(connection, userId);
-      connection.release();
-
-      return postResult;
+    if (Array.isArray(getPostListResult) && getPostListResult.length === 0) {
+      return errResponse(baseResponse.POST_NOT_EXIST);
     }
-  } catch (error) {
-    logger.error(`App - getPosts Error\n ${error.message}`);
+    return response(baseResponse.SUCCESS, getPostListResult);
+  } catch (err) {
+    logger.error(`App - retrievePostList err\n: ${err.message}`);
+    return errResponse(baseResponse.SERVER_ERROR);
+  }
+};
+
+exports.retrievePostByQuery = async function (userInfo) {
+  try {
+    if (userInfo.username != null) {
+      const connection = await pool.getConnection(async (conn) => conn);
+      const retrievePostResult = await postDao.selectPostByName(
+        connection,
+        userInfo.username
+      );
+      connection.release();
+
+      if (
+        Array.isArray(retrievePostResult) &&
+        retrievePostResult.length === 0
+      ) {
+        return errResponse(baseResponse.USER_POST_NOT_EXIST);
+      }
+      return response(baseResponse.SUCCESS, retrievePostResult);
+    } else if (userInfo.userId != null) {
+      const connection = await pool.getConnection(async (conn) => conn);
+      const retrievePostResult = await postDao.selectPostByUserId(
+        connection,
+        userInfo.userId
+      );
+      connection.release();
+
+      if (
+        Array.isArray(retrievePostResult) &&
+        retrievePostResult.length === 0
+      ) {
+        return errResponse(baseResponse.USER_POST_NOT_EXIST);
+      }
+      return response(baseResponse.SUCCESS, retrievePostResult);
+    }
+  } catch (err) {
+    logger.error(`App - retrievePostByQuery err\n: ${err.message}`);
+    return errResponse(baseResponse.SERVER_ERROR);
+  }
+};
+
+exports.retrievePostByPostIdx = async function (postIdx) {
+  try {
+    if (!postIdx) {
+      return errResponse(baseResponse.POST_POSTIDX_EMPTY);
+    }
+    const connection = await pool.getConnection(async (conn) => conn);
+    const retrievePostResult = await postDao.selectPostIdx(connection, postIdx);
+    connection.release();
+
+    return retrievePostResult;
+  } catch (err) {
+    logger.error(`App- retrievePostByPostIdx err\n: ${err.message}`);
     return errResponse(baseResponse.SERVER_ERROR);
   }
 };

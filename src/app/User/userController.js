@@ -16,7 +16,7 @@ exports.getTest = async function (req, res) {
 };
 
 /**
- * API No. 1
+ * API No. 1.1
  * API Name : 유저 생성 (회원가입) API
  * [POST] /app/users
  */
@@ -24,7 +24,7 @@ exports.postUsers = async function (req, res) {
   /**
    * Body: username, email, password, userId
    */
-  const { username, email, password, userId } = req.body;
+  const { username, email, userId, password, profileImgIdx } = req.body;
 
   // 빈 값 체크
   if (!email) return res.send(response(baseResponse.SIGNUP_EMAIL_EMPTY));
@@ -41,8 +41,9 @@ exports.postUsers = async function (req, res) {
   const signUpResponse = await userService.createUser(
     username,
     email,
+    userId,
     password,
-    userId
+    profileImgIdx
   );
 
   // signUpResponse 값을 json으로 전달
@@ -51,24 +52,32 @@ exports.postUsers = async function (req, res) {
 
 /**
  * API No. 2
- * API Name : 유저 조회 API (+ 이메일로 검색 조회)
+ * API Name : 유저 조회 API (+ 이메일, 이름, 아이디로 검색 조회)
  * [GET] /app/users
  */
 exports.getUsers = async function (req, res) {
   /**
-   * Query String: email
+   * Query String: email, userId, username
    */
-  const email = req.query.email;
+  const userInfo = {
+    email: null,
+    userId: null,
+    username: null,
+  };
+  userInfo.email = req.query.email;
+  userInfo.userId = req.query.userId;
+  userInfo.username = req.query.username;
 
-  if (!email) {
+  if (Object.values(userInfo).every((val) => val == null)) {
     // 유저 전체 조회
     const userListResult = await userProvider.retrieveUserList();
     // SUCCESS : { "isSuccess": true, "code": 1000, "message":"성공" }, 메세지와 함께 userListResult 호출
     return res.send(response(baseResponse.SUCCESS, userListResult));
   } else {
-    // 아메일을 통한 유저 검색 조회
-    const userListByEmail = await userProvider.retrieveUserList(email);
-    return res.send(response(baseResponse.SUCCESS, userListByEmail));
+    const retrieveUserListResponse = await userProvider.retrieveUserList(
+      userInfo
+    );
+    return res.send(retrieveUserListResponse);
   }
 };
 
@@ -91,6 +100,28 @@ exports.getUserById = async function (req, res) {
     return res.send(errResponse(baseResponse.USER_USERID_NOT_EXIST));
   }
   return res.send(response(baseResponse.SUCCESS, userByUserId));
+};
+
+/**
+ * API No. 4
+ * API Name : 특정 유저 탈퇴(삭제) API
+ * [DELETE] /app/users
+ */
+exports.delUserById = async function (req, res) {
+  /**
+   * Query String : userId
+   */
+  const userId = req.query.userId;
+  // errResponse 전달
+  if (!userId) return res.send(errResponse(baseResponse.USER_USERID_EMPTY));
+
+  // Validation: userId를 통한 유저 유무 조회
+  const userByUserId = await userProvider.retrieveUser(userId);
+  if (!userByUserId) {
+    return res.send(errResponse(baseResponse.USER_USERID_NOT_EXIST));
+  }
+  const delUserResponse = await userService.delUser(userId);
+  return res.send(delUserResponse);
 };
 
 // TODO: After 로그인 인증 방법 (JWT)

@@ -5,7 +5,7 @@ module.exports = function (app) {
   // 0. 테스트 API
   app.get("/app/test", user.getTest);
 
-  // 1. 유저 생성 (회원가입) API
+  // 1.1 유저 생성 (회원가입) API
   app.post("/app/users", user.postUsers);
 
   // 2. 유저 조회 API (+ 검색)
@@ -13,6 +13,9 @@ module.exports = function (app) {
 
   // 3. 특정 유저 조회 API
   app.get("/app/users/:userId", user.getUserById);
+
+  // 4. 특정 유저 탈퇴(삭제) API
+  app.delete("/app/users", user.delUserById);
 
   // 아래 부분은 7주차에서 다룸.
   // TODO: After 로그인 인증 방법 (JWT)

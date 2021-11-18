@@ -15,7 +15,13 @@ const crypto = require("crypto");
 
 // Service: Create, Update, Delete 비즈니스 로직 처리
 
-exports.createUser = async function (username, email, password, userId) {
+exports.createUser = async function (
+  username,
+  email,
+  userId,
+  password,
+  profileImgIdx
+) {
   try {
     // 이메일 중복 확인
     // UserProvider에서 해당 이메일과 같은 User 목록을 받아서 emailRows에 저장한 후, 배열의 길이를 검사한다.
@@ -31,7 +37,13 @@ exports.createUser = async function (username, email, password, userId) {
       .digest("hex");
 
     // 쿼리문에 사용할 변수 값을 배열 형태로 전달
-    const insertUserInfoParams = [username, hashedPassword, email, userId];
+    const insertUserInfoParams = [
+      username,
+      hashedPassword,
+      email,
+      userId,
+      profileImgIdx,
+    ];
 
     const connection = await pool.getConnection(async (conn) => conn);
 
@@ -39,12 +51,27 @@ exports.createUser = async function (username, email, password, userId) {
       connection,
       insertUserInfoParams
     );
-    console.log(userIdResult);
-    console.log(`추가된 회원 : ${userIdResult[0].insertId}`);
+    logger.info(`Returned result: ${userIdResult}`);
+    logger.info(`추가된 회원 : ${userIdResult[0].insertId}`);
     connection.release();
-    return response(baseResponse.SUCCESS);
+    return response(baseResponse.SUCCESS, { userIdx: userIdResult[0].inserId });
   } catch (err) {
     logger.error(`App - createUser Service error\n: ${err.message}`);
+    return errResponse(baseResponse.DB_ERROR);
+  }
+};
+
+// DELETE user by userId
+exports.delUser = async function (userId) {
+  try {
+    const connection = await pool.getConnection(async (conn) => conn);
+
+    const delUserResult = await userDao.delUserById(connection, userId);
+    logger.info(`Returned result: ${delUserResult}`);
+    logger.info(`삭제된 회원 : ${delUserResult[0]}`);
+    return response(baseResponse.SUCCESS);
+  } catch (err) {
+    logger.error(`App - delUser Service error\n: ${err.message}`);
     return errResponse(baseResponse.DB_ERROR);
   }
 };
