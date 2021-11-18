@@ -51,11 +51,15 @@ exports.createUser = async function (
       connection,
       insertUserInfoParams
     );
+    console.log(`Returned result: ${userIdResult}`);
     logger.info(`Returned result: ${userIdResult}`);
     logger.info(`추가된 회원 : ${userIdResult[0].insertId}`);
     connection.release();
-    return response(baseResponse.SUCCESS, { userIdx: userIdResult[0].inserId });
+    return response(baseResponse.SUCCESS, {
+      userIdx: userIdResult[0].insertId,
+    });
   } catch (err) {
+    console.error(`App - createUser Service error\n: ${err.message}`);
     logger.error(`App - createUser Service error\n: ${err.message}`);
     return errResponse(baseResponse.DB_ERROR);
   }

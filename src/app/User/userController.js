@@ -22,20 +22,20 @@ exports.getTest = async function (req, res) {
  */
 exports.postUsers = async function (req, res) {
   /**
-   * Body: username, email, password, userId
+   * Body: username, email, userId, password, profileImgIdx
    */
   const { username, email, userId, password, profileImgIdx } = req.body;
 
   // 빈 값 체크
-  if (!email) return res.send(response(baseResponse.SIGNUP_EMAIL_EMPTY));
+  if (!email) return res.send(errResponse(baseResponse.SIGNUP_EMAIL_EMPTY));
 
   // 길이 체크
   if (email.length > 30)
-    return res.send(response(baseResponse.SIGNUP_EMAIL_LENGTH));
+    return res.send(errResponse(baseResponse.SIGNUP_EMAIL_LENGTH));
 
   // 형식 체크 (by 정규표현식)
   if (!regexEmail.test(email))
-    return res.send(response(baseResponse.SIGNUP_EMAIL_ERROR_TYPE));
+    return res.send(errResponse(baseResponse.SIGNUP_EMAIL_ERROR_TYPE));
 
   // createUser 함수 실행을 통한 결과 값을 signUpResponse에 저장
   const signUpResponse = await userService.createUser(
@@ -47,7 +47,7 @@ exports.postUsers = async function (req, res) {
   );
 
   // signUpResponse 값을 json으로 전달
-  return res.send(signUpResponse);
+  return res.status(201).send(signUpResponse);
 };
 
 /**
