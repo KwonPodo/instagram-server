@@ -8,6 +8,7 @@ const baseResponse = require("../../../config/baseResponseStatus.js");
 
 exports.retrievePostList = async function () {
   try {
+    // Post 내용 받아오기
     const connection = await pool.getConnection(async (conn) => conn);
     const getPostListResult = await postDao.selectPost(connection);
     connection.release();
@@ -70,7 +71,7 @@ exports.retrievePostByPostIdx = async function (postIdx) {
     const retrievePostResult = await postDao.selectPostIdx(connection, postIdx);
     connection.release();
 
-    return retrievePostResult;
+    return response(baseResponse.SUCCESS, retrievePostResult);
   } catch (err) {
     logger.error(`App- retrievePostByPostIdx err\n: ${err.message}`);
     return errResponse(baseResponse.SERVER_ERROR);

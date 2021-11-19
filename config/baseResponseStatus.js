@@ -140,7 +140,7 @@ module.exports = {
     message: "Query를 입력해주세요",
   },
 
-  TEXTCONTENT_EMPTY: {
+  POST_TEXTCONTENT_EMPTY: {
     isSuccess: false,
     code: 2023,
     message: "textContent를 입력해주세요",

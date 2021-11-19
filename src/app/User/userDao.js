@@ -4,7 +4,7 @@ const { logger } = require("../../../config/winston.js");
 // 모든 유저 조회
 async function selectUser(connection) {
   const selectUserListQuery = `
-                SELECT username, userIdx, email, userId 
+                SELECT userIdx, username, userId, email 
                 FROM User;
                 `;
   const [userRows] = await connection.query(selectUserListQuery);

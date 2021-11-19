@@ -51,7 +51,7 @@ exports.postUsers = async function (req, res) {
 };
 
 /**
- * API No. 2
+ * API No. 3.1
  * API Name : 유저 조회 API (+ 이메일, 이름, 아이디로 검색 조회)
  * [GET] /app/users
  */
@@ -72,17 +72,17 @@ exports.getUsers = async function (req, res) {
     // 유저 전체 조회
     const userListResult = await userProvider.retrieveUserList();
     // SUCCESS : { "isSuccess": true, "code": 1000, "message":"성공" }, 메세지와 함께 userListResult 호출
-    return res.send(response(baseResponse.SUCCESS, userListResult));
+    return res.status(200).send(response(baseResponse.SUCCESS, userListResult));
   } else {
     const retrieveUserListResponse = await userProvider.retrieveUserList(
       userInfo
     );
-    return res.send(retrieveUserListResponse);
+    return res.status(200).send(retrieveUserListResponse);
   }
 };
 
 /**
- * API No. 3
+ * API No. 3.2
  * API Name : 특정 유저 조회 API
  * [GET] /app/users/{userId}
  */

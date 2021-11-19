@@ -5,8 +5,12 @@ const { logger } = require("../../../config/winston.js");
 // Search every Post
 async function selectPost(connection) {
   const selectPostQuery = `
-                  SELECT postIdx, userIdx, textContent, imgUrl
-                  FROM Post;
+                  SELECT *
+                  FROM Post 
+                  LEFT JOIN VisualContent
+                  ON Post.postIdx = VisualContent.postIdx
+                  WHERE Post.status = 'ACTIVE'
+                  ORDER BY Post.updatedAt DESC;
                   `;
   const [postRows] = await connection.query(selectPostQuery);
   return postRows;
@@ -40,9 +44,9 @@ async function selectPostByName(connection, username) {
 
 async function selectPostIdx(connection, postIdx) {
   const selectPostQuery = `
-                  SELECT *
+                  SELECT postIdx, userIdx, textContent, createdAt, updatedAt
                   FROM Post
-                  WHERE postIdx = ?;
+                  WHERE postIdx = ? && status = 'ACTIVE';
                   `;
   const [postRows] = await connection.query(selectPostQuery, postIdx);
   return postRows;
