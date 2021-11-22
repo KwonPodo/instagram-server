@@ -55,8 +55,8 @@ async function selectPostIdx(connection, postIdx) {
 // Insert Into Post
 async function insertPostInfo(connection, insertPostInfoParams) {
   const insertPostInfoQuery = `
-                  INSERT INTO Post ( userIdx, textContent, imgUrl, videoUrl )
-                  VALUES (?, ?, ?, ?);
+                  INSERT INTO Post ( userIdx, textContent )
+                  VALUES (?, ?);
                   `;
   const insertPostInfoRow = await connection.query(
     insertPostInfoQuery,
@@ -66,16 +66,24 @@ async function insertPostInfo(connection, insertPostInfoParams) {
   return insertPostInfoRow;
 }
 
+// Insert Into VisualContent
+async function insertVisualContent(connection, postIdx, visualContentUrl) {
+  const insertImgContentQuery = `
+                  INSERT INTO VisualContent (postIdx, visualContentUrl) 
+                  VALUES ( '${postIdx}, '${visualContentUrl}');
+                  `;
+  const insertImgContentRow = await connection.query(insertImgContentQuery);
+  return insertImgContentRow;
+}
+
 // Delete Post
-async function delPostInfo(connection, delPostInfoParam) {
+async function delPostInfo(connection, postIdx) {
   const delPostInfoQuery = `
-                  DELETE FROM Post
+                  UPDATE Post
+                  SET status = 'DELETED'
                   WHERE postIdx = ?;
                   `;
-  const delPostInfoRow = await connection.query(
-    delPostInfoQuery,
-    delPostInfoParam
-  );
+  const delPostInfoRow = await connection.query(delPostInfoQuery, postIdx);
   return delPostInfoRow;
 }
 
@@ -83,11 +91,18 @@ async function delPostInfo(connection, delPostInfoParam) {
 async function editPost(connection, editPostInfoParams) {
   const editPostQuery = `
                   UPDATE Post
-                  SET textContent = ?, imgUrl = ?, videoUrl = ?, updateAt = NOW()
+                  SET textContent = ?, updateAt = NOW()
                   WHERE postIdx = ?;
                   `;
   const editPostRow = await connection.query(editPostQuery, editPostInfoParams);
   return editPostRow;
+}
+
+async function editVisualContent(connection, visualContentUrl) {
+  const editVisualQuery = `
+                  UPDATE VisualContent
+                  SET visualContentUrl = '${visualContentUrl}', updateAt = NOW()
+                  WHERE visualContentIdx `;
 }
 
 module.exports = {
@@ -96,6 +111,7 @@ module.exports = {
   selectPostIdx,
   selectPostByName,
   insertPostInfo,
+  insertVisualContent,
   delPostInfo,
   editPost,
 };

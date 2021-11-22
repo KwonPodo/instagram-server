@@ -2,6 +2,7 @@ const postProvider = require("./postProvider.js");
 const postService = require("./postService.js");
 const { response, errResponse } = require("../../../config/response.js");
 const baseResponse = require("../../../config/baseResponseStatus");
+const { SUCCESS } = require("../../../config/baseResponseStatus");
 
 /**
  * API NO. 3.1
@@ -25,13 +26,18 @@ exports.getPost = async function (req, res) {
   const postIdx = req.params.postIdx;
 
   const getPostResult = await postProvider.retrievePostByPostIdx(postIdx);
-  res.send(getPostResult);
+  res.send(response(baseResponse.SUCCESS, getPostResult));
 };
 
 /**
  * API NO. 4.2
  * API Name : 게시글 생성 API
  * [POST] /app/posts
+ * Request Body : {
+ *    "userIdx",
+ *    "textContent",
+ *    "visualContentArray"
+ * }
  */
 exports.createPosts = async function (req, res) {
   const { userIdx, textContent, visualContentArray } = req.body;
@@ -39,6 +45,8 @@ exports.createPosts = async function (req, res) {
     return res.send(errResponse(baseResponse.USER_USERIDX_EMPTY));
   } else if (!textContent) {
     return res.send(errResponse(baseResponse.POST_TEXTCONTENT_EMPTY));
+  } else if (visualContentArray.length === 0) {
+    return res.send(errResponse(baseResponse.POST_IMGURL_EMPTY));
   } else {
     const createPostResponse = await postService.createPost(
       userIdx,
@@ -52,16 +60,13 @@ exports.createPosts = async function (req, res) {
 
 /**
  * API NO. 4.3
- * Request Body : {
- *   "postIdx",
- *   "textContent",
- *   "imgUrl",
- *   "videoUrl",
- * }
+ * API Name: 게시물 수정 API
+ * [PUT] /app/posts/{postIdx}
+ * Path Variable : postIdx
  */
 
 exports.editPost = async function (req, res) {
-  const { postIdx, textContent, imgUrl, videoUrl } = req.body;
+  const { postIdx, textContent, visualContentArray } = req.body;
   // 빈값 체크
   if (!postIdx) {
     res.send(errResponse(baseResponse.POST_POSTIDX_EMPTY));
@@ -69,15 +74,12 @@ exports.editPost = async function (req, res) {
     res.send(errResponse(baseResponse.TEXTCONTENT_EMPTY));
   } else if (!imgUrl) {
     res.send(errResponse(baseResponse.POST_IMGURL_EMPTY));
-  } else if (!videoUrl) {
-    res.send(errResponse(baseResponse.POST_VIDEOURL_EMPTY));
   }
 
   const editPostResponse = await postService.editPost(
     postIdx,
     textContent,
-    imgUrl,
-    videoUrl
+    visualContentArray
   );
 
   res.send(editPostResponse);
@@ -86,13 +88,10 @@ exports.editPost = async function (req, res) {
 /**
  * API NO. 4.4
  * API Name : 게시물 삭제 API (by postIdx in Query String)
- * [DELETE] /app/posts
+ * [PATCH] /app/posts/{postIdx}
  */
-exports.delPostByPostIdx = async function (req, res) {
-  /**
-   * Query string : postIdx
-   */
-  const postIdx = req.query.postIdx;
+exports.patchPostByPostIdx = async function (req, res) {
+  const postIdx = req.params.postIdx;
 
   const delPostResponse = await postService.delPost(postIdx);
   return res.send(response(delPostResponse));

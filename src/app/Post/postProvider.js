@@ -71,7 +71,7 @@ exports.retrievePostByPostIdx = async function (postIdx) {
     const retrievePostResult = await postDao.selectPostIdx(connection, postIdx);
     connection.release();
 
-    return response(baseResponse.SUCCESS, retrievePostResult);
+    return retrievePostResult;
   } catch (err) {
     logger.error(`App- retrievePostByPostIdx err\n: ${err.message}`);
     return errResponse(baseResponse.SERVER_ERROR);

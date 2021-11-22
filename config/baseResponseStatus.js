@@ -188,6 +188,12 @@ module.exports = {
     message: "updateAt을 확인해주세요",
   },
 
+  POST_MEDIA_NOT_EXIST: {
+    isSuccess: false,
+    code: 2030,
+    message: "업로드 가능한 미디어 확장자가 아닙니다.",
+  },
+
   // Response error
   SIGNUP_REDUNDANT_EMAIL: {
     isSuccess: false,
@@ -219,6 +225,18 @@ module.exports = {
     isSuccess: false,
     code: 3006,
     message: "탈퇴 된 계정입니다. 고객센터에 문의해주세요.",
+  },
+
+  FOLLOWER_LIST_EMPTY: {
+    isSuccess: false,
+    code: 3007,
+    message: "팔로워가 없습니다.",
+  },
+
+  FOLLOWEE_LIST_EMPTY: {
+    isSuccess: false,
+    code: 3008,
+    message: "팔로우하는 사람이 없습니다.",
   },
 
   //Connection, Transaction 등의 서버 오류

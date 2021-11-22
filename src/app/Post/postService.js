@@ -5,25 +5,39 @@ const baseResponse = require("../../../config/baseResponseStatus.js");
 const postProvider = require("./postProvider.js");
 const postDao = require("./postDao.js");
 
-exports.createPost = async function (userIdx, textContent, imgUrl, videoUrl) {
+exports.createPost = async function (userIdx, textContent, visualContentArray) {
   try {
-    const insertPostInfoParams = [userIdx, textContent, imgUrl, videoUrl];
-    // connect to DB
+    const insertPostInfoParams = [userIdx, textContent];
+    // Insert textContent to Post TABLE
     const connection = await pool.getConnection();
     const createPostResult = await postDao.insertPostInfo(
       connection,
       insertPostInfoParams
     );
 
-    logger.info(`Created Post: ${createPostResult[0]}`);
+    const createdPostIdx = createPostResult[0].insertId;
 
+    logger.info(`Created PostIdx: ${createdPostIdx}`);
+
+    //Insert visualContent to VisualContent TABLE
+    const createdVisualIdxArray = [];
+
+    for (let url of visualContentArray) {
+      console.log(url);
+      let insertVisualContentResult = await postDao.insertVisualContent(
+        connection,
+        createdPostIdx,
+        url
+      );
+      console.log(`createdVisualIdx: ${insertVisualContentResult[0].insertId}`);
+      createdVisualIdxArray.push(insertVisualContentResult[0].inserId);
+      console.log(createdVisualIdxArray);
+    }
     // release connection
     connection.release();
-
-    return response(baseResponse.SUCCESS, [
-      `Inserted Post postIdx: ${createPostResult[0].insertId}`,
-      `Number of affected Rows of DB: ${createPostResult[0].affectedRows}`,
-    ]);
+    return response(baseResponse.SUCCESS, {
+      postIdx: createdPostIdx,
+    });
   } catch (err) {
     logger.error(`App - POST posts error\n ${err.message} `);
     return errResponse(baseResponse.SERVER_ERROR);
@@ -38,21 +52,14 @@ exports.delPost = async function (postIdx) {
       return errResponse(baseResponse.POST_POSTIDX_NOT_EXIST);
     }
 
-    const delPostInfoParam = [postIdx];
     // connect to DB
     const connection = await pool.getConnection();
-    const delPostResult = await postDao.delPostInfo(
-      connection,
-      delPostInfoParam
-    );
+    const delPostResult = await postDao.delPostInfo(connection, postIdx);
     // release connection
     connection.release();
 
-    logger.info(`Deleted Post: ${delPostInfoParam[0]}`);
-    return response(
-      baseResponse.SUCCESS,
-      `Deleted Post ${delPostInfoParam[0]}`
-    );
+    logger.info(`Deleted Post: ${postIdx}\ndelPostResult: ${delPostResult}`);
+    return response(baseResponse.SUCCESS, `Deleted Post ${postIdx}`);
   } catch (err) {
     logger.error(`App - DELETE post error\n ${err.message} `);
     return errResponse(baseResponse.SERVER_ERROR);
@@ -71,7 +78,7 @@ exports.editPost = async function (postIdx, textContent, imgUrl, videoUrl) {
     }
 
     // editParam 구성
-    const editPostInfoParams = [postIdx, textContent, imgUrl, videoUrl];
+    const editPostInfoParams = [postIdx, textContent];
 
     // DB 연결 후 postDao의 editPost 호출
     const connection = await pool.getConnection(async (conn) => conn);
