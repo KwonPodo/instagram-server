@@ -5,6 +5,7 @@ const baseResponse = require("../../../config/baseResponseStatus");
 const { response, errResponse } = require("../../../config/response");
 
 const regexEmail = require("regex-email");
+const { POST_NOT_EXIST } = require("../../../config/baseResponseStatus");
 
 /**
  * API No. 0
@@ -86,7 +87,7 @@ exports.getUsers = async function (req, res) {
  * API Name : 특정 유저 조회 API
  * [GET] /app/users/{userId}
  */
-exports.getUserById = async function (req, res) {
+exports.getUserById = async function (req, res, next) {
   /**
    * Path Variable: userId
    */
@@ -99,7 +100,8 @@ exports.getUserById = async function (req, res) {
   if (!userByUserId) {
     return res.send(errResponse(baseResponse.USER_USERID_NOT_EXIST));
   }
-  return res.send(response(baseResponse.SUCCESS, userByUserId));
+  req.userId = userByUserId;
+  next();
 };
 
 /**
@@ -134,6 +136,11 @@ exports.delUserById = async function (req, res) {
 exports.login = async function (req, res) {
   const { email, password } = req.body;
 
+  // Validation
+  if (!regexEmail.test(email)) {
+    return errResponse(baseResponse.SIGNIN_EMAIL_ERROR_TYPE);
+  }
+
   const signInResponse = await userService.postSignIn(email, password);
 
   return res.send(signInResponse);
@@ -144,24 +151,25 @@ exports.login = async function (req, res) {
  * API Name : 회원 정보 수정 API + JWT + Validation
  * [PATCH] /app/users/:userId
  * path variable : userId
- * body : nickname
+ * body : username
  */
 exports.patchUsers = async function (req, res) {
-  // jwt - userId, path variable :userId
+  // jwt - userId, userIdx, path variable :userId
 
+  console.log(req.verifiedToken);
   const userIdFromJWT = req.verifiedToken.userId;
 
   const userId = req.params.userId;
-  const nickname = req.body.nickname;
+  const username = req.body.username;
 
   // JWT는 이 후 주차에 다룰 내용
   if (userIdFromJWT != userId) {
     res.send(errResponse(baseResponse.USER_ID_NOT_MATCH));
   } else {
-    if (!nickname)
-      return res.send(errResponse(baseResponse.USER_NICKNAME_EMPTY));
+    if (!username)
+      return res.send(errResponse(baseResponse.USER_USERNAME_EMPTY));
 
-    const editUserInfo = await userService.editUser(userId, nickname);
+    const editUserInfo = await userService.editUser(userId, username);
     return res.send(editUserInfo);
   }
 };
@@ -174,4 +182,35 @@ exports.check = async function (req, res) {
   const userIdResult = req.verifiedToken.userId;
   console.log(userIdResult);
   return res.send(response(baseResponse.TOKEN_VERIFICATION_SUCCESS));
+};
+
+/**
+ * API NO. 5.1
+ * API Name : 팔로잉 유저 조회 API
+ * [PUT] /app/:userId/following
+ */
+exports.following = async function (req, res) {
+  // path variable :followerUserId
+  const followerUserId = req.params.userId;
+
+  const followingResult = await userProvider.getFollowings(followerUserId);
+  console.log(`followerUserId:`, followerUserId);
+  console.log(`followingResult:`, followingResult);
+  return res.send(response(baseResponse.SUCCESS, followingResult));
+};
+
+/**
+ * API NO. 5.2
+ * API Name : 팔로워 유저 조회 API
+ * [PUT] /app/:userId/followers
+ */
+exports.followers = async function (req, res) {
+  // path variable: followingUserId
+
+  const followingUserId = req.params.userId;
+
+  const followersResult = await userProvider.getFollowers(followingUserId);
+  console.log("followingUserId", followingUserId);
+  console.log("followersResult:", followersResult);
+  return res.send(response(baseResponse.SUCCESS, followersResult));
 };

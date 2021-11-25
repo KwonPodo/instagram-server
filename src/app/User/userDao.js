@@ -71,7 +71,7 @@ async function delUserById(connection, userId) {
 // 패스워드 체크
 async function selectUserPassword(connection, selectUserPasswordParams) {
   const selectUserPasswordQuery = `
-        SELECT email, userId, password
+        SELECT userIdx, email, userId, password
         FROM User 
         WHERE email = ? AND password = ?;`;
   const selectUserPasswordRow = await connection.query(
@@ -85,7 +85,7 @@ async function selectUserPassword(connection, selectUserPasswordParams) {
 // 유저 계정 상태 체크 (jwt 생성 위해 id 값도 가져온다.)
 async function selectUserAccount(connection, email) {
   const selectUserAccountQuery = `
-        SELECT status, userId
+        SELECT status, userId, userIdx
         FROM User 
         WHERE email = ?;`;
   const selectUserAccountRow = await connection.query(
@@ -95,15 +95,91 @@ async function selectUserAccount(connection, email) {
   return selectUserAccountRow[0];
 }
 
-async function updateUserInfo(connection, id, userId) {
+async function updateUserInfo(connection, userId, username) {
   const updateUserQuery = `
   UPDATE User 
-  SET userId = ?
-  WHERE id = ?;`;
-  const updateUserRow = await connection.query(updateUserQuery, [nickname, id]);
+  SET username = ?
+  WHERE userId = ?;`;
+  const updateUserRow = await connection.query(updateUserQuery, [
+    username,
+    userId,
+  ]);
   return updateUserRow[0];
 }
 
+async function selectFollowing(connection, followerIdx) {
+  const selectFollowingQuery = `
+  SELECT userIdx, username, userId, profileImgIdx
+  FROM User 
+  WHERE userIdx IN (
+    SELECT followingIdx
+    FROM Follow
+    WHERE followerIdx = ?
+  );
+  `;
+  const [selectFollowingRow] = await connection.query(
+    selectFollowingQuery,
+    followerIdx
+  );
+  return selectFollowingRow;
+}
+
+async function selectFollowers(connection, followingIdx) {
+  const selectFollowersQuery = `
+  SELECT userIdx, username, userId, profileImgIdx
+  FROM User 
+  WHERE userIdx IN (
+    SELECT followerIdx
+    FROM Follow
+    WHERE followingIdx = ?
+  );
+  `;
+  const [selectFollowersRow] = await connection.query(
+    selectFollowersQuery,
+    followingIdx
+  );
+  return selectFollowersRow;
+}
+
+async function selectFollowStatus(connection, followerId, followingId) {
+  const selectFollowStatusQuery = `
+  SELECT followIdx, followStatus
+  FROM Follow
+  WHERE followerIdx = (
+    SELECT User.userIdx
+    FROM User
+    WHERE userId = ?
+  ) AND followingIdx = (
+    SELECT User.userIdx
+    FROM User
+    WHERE userId = ?
+  );`;
+  const selectFollowStatusRow = await connection.query(
+    selectFollowStatusQuery,
+    [followerId, followingId]
+  );
+  return selectFollowStatusRow;
+}
+
+async function followByIdx(connection, followIdx) {
+  const followQuery = `
+  UPDATE Follow
+  SET followStatus = 'Y'
+  WHERE followIdx = ?;
+  `;
+  const followRow = await connection.query(followQuery, followIdx);
+  return followRow;
+}
+
+async function unFollowByIdx(connection, followIdx) {
+  const followQuery = `
+  UPDATE Follow
+  SET followStatus = 'N'
+  WHERE followIdx = ?;
+  `;
+  const unFollowRow = await connection.query(followQuery, followIdx);
+  return unFollowRow;
+}
 module.exports = {
   selectUser,
   selectUserEmail,
@@ -114,4 +190,9 @@ module.exports = {
   insertUserInfo,
   delUserById,
   updateUserInfo,
+  selectFollowing,
+  selectFollowers,
+  selectFollowStatus,
+  followByIdx,
+  unFollowByIdx,
 };

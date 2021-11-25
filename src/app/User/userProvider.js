@@ -68,6 +68,67 @@ exports.retrieveUser = async function (userId) {
   return userResult[0]; // 한 명의 유저 정보만을 불러오므로 배열 타입을 리턴하는 게 아닌 0번 인덱스를 파싱해서 오브젝트 타입 리턴
 };
 
+exports.getFollowings = async function (followerId) {
+  try {
+    const connection = await pool.getConnection();
+    const getFollowerIdx = await userDao.selectUserName(connection, followerId);
+    console.log(`getFollowerIdx[0].userIdx:`, getFollowerIdx[0].userIdx);
+    const getFollowings = await userDao.selectFollowing(
+      connection,
+      getFollowerIdx[0].userIdx
+    );
+    connection.release();
+
+    console.log(`getFollowings:`, getFollowings);
+    if (getFollowings.length <= 0) {
+      return errResponse(baseResponseStatus.FOLLOWEE_LIST_EMPTY);
+    }
+    return getFollowings;
+  } catch (err) {
+    logger.error(`App - followUser error\n: ${err.message}`);
+    return errResponse(baseResponseStatus.DB_ERROR);
+  }
+};
+
+exports.getFollowers = async function (followingId) {
+  try {
+    const connection = await pool.getConnection();
+    const getFollowingIdx = await userDao.selectUserName(
+      connection,
+      followingId
+    );
+    console.log(`getFollowingIdx[0].userIdx:`, getFollowingIdx[0].userIdx);
+    const getFollowers = await userDao.selectFollowers(
+      connection,
+      getFollowingIdx[0].userIdx
+    );
+    connection.release();
+
+    console.log(`getFollowers:`, getFollowers);
+    if (getFollowers.length <= 0) {
+      return errResponse(baseResponseStatus.FOLLOWER_LIST_EMPTY);
+    }
+
+    return getFollowers;
+  } catch (err) {
+    logger.error(`App - followUser error\n: ${err.message}`);
+    return errResponse(baseResponseStatus.DB_ERROR);
+  }
+};
+
+exports.retrieveFollowStatus = async function (followerId, followingId) {
+  const connection = await pool.getConnection();
+  const retrieveStatusResult = await userDao.selectFollowStatus(
+    connection,
+    followerId,
+    followingId
+  );
+  connection.release();
+
+  console.log(retrieveStatusResult);
+  return retrieveStatusResult;
+};
+
 exports.emailCheck = async function (email) {
   const connection = await pool.getConnection(async (conn) => conn);
   const emailCheckResult = await userDao.selectUserEmail(connection, email);

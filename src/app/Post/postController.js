@@ -2,7 +2,6 @@ const postProvider = require("./postProvider.js");
 const postService = require("./postService.js");
 const { response, errResponse } = require("../../../config/response.js");
 const baseResponse = require("../../../config/baseResponseStatus");
-const { SUCCESS } = require("../../../config/baseResponseStatus");
 
 /**
  * API NO. 3.1
@@ -13,6 +12,13 @@ exports.getRecentPosts = async function (req, res) {
   const getRecentPostsResult = await postProvider.retrievePostList();
   res.send(getRecentPostsResult);
 };
+
+/**
+ * API NO. 3.2
+ * API Name : 특정 유저 게시물 조회 API
+ * [GET] /app/:userId
+ */
+exports.getPostByUserId = async function (req, res, next) {};
 
 /**
  * API NO. 4.1

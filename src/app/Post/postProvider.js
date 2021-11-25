@@ -13,7 +13,7 @@ exports.retrievePostList = async function () {
     const getPostListResult = await postDao.selectPost(connection);
     connection.release();
 
-    if (Array.isArray(getPostListResult) && getPostListResult.length === 0) {
+    if (getPostListResult.length === 0) {
       return errResponse(baseResponse.POST_NOT_EXIST);
     }
     return response(baseResponse.SUCCESS, getPostListResult);

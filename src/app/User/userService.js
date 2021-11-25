@@ -89,6 +89,7 @@ exports.postSignIn = async function (email, password) {
       return errResponse(baseResponse.SIGNIN_EMAIL_WRONG);
 
     const selectEmail = emailRows[0].email;
+    console.log(selectEmail);
 
     // 비밀번호 확인 (입력한 비밀번호를 암호화한 것과 DB에 저장된 비밀번호가 일치하는 지 확인함)
     const hashedPassword = await crypto
@@ -100,6 +101,7 @@ exports.postSignIn = async function (email, password) {
     const passwordRows = await userProvider.passwordCheck(
       selectUserPasswordParams
     );
+    console.log(passwordRows[0]);
 
     if (passwordRows[0].password !== hashedPassword) {
       return errResponse(baseResponse.SIGNIN_PASSWORD_WRONG);
@@ -107,6 +109,7 @@ exports.postSignIn = async function (email, password) {
 
     // 계정 상태 확인
     const userInfoRows = await userProvider.accountCheck(email);
+    console.log(userInfoRows[0]);
 
     if (userInfoRows[0].status === "INACTIVE") {
       return errResponse(baseResponse.SIGNIN_INACTIVE_ACCOUNT);
@@ -114,12 +117,14 @@ exports.postSignIn = async function (email, password) {
       return errResponse(baseResponse.SIGNIN_WITHDRAWAL_ACCOUNT);
     }
 
-    console.log(userInfoRows[0].id); // DB의 userId
+    console.log(userInfoRows[0].userId); // DB의 userId
+    console.log(userInfoRows[0].userIdx);
 
     //토큰 생성 Service
     let token = await jwt.sign(
       {
-        userId: userInfoRows[0].id,
+        userId: userInfoRows[0].userId,
+        userIdx: userInfoRows[0].userIdx,
       }, // 토큰의 내용(payload)
       secret_config.jwtsecret, // 비밀키
       {
@@ -129,7 +134,7 @@ exports.postSignIn = async function (email, password) {
     );
 
     return response(baseResponse.SUCCESS, {
-      userId: userInfoRows[0].id,
+      userId: userInfoRows[0].userId,
       jwt: token,
     });
   } catch (err) {
@@ -142,15 +147,16 @@ exports.postSignIn = async function (email, password) {
   }
 };
 
-exports.editUser = async function (id, nickname) {
+exports.editUser = async function (userId, username) {
   try {
-    console.log(id);
+    console.log(userId);
     const connection = await pool.getConnection(async (conn) => conn);
     const editUserResult = await userDao.updateUserInfo(
       connection,
-      id,
-      nickname
+      userId,
+      username
     );
+    console.log(editUserResult);
     connection.release();
 
     return response(baseResponse.SUCCESS);
