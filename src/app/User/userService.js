@@ -1,140 +1,94 @@
-const { logger } = require("../../../config/winston");
-const { pool } = require("../../../config/database");
-const secret_config = require("../../../config/secret");
+import * as bcrypt from "bcrypt";
+import { logger } from "../../../config/winston.js";
+import promisePool from "../../../config/database.js";
+import secret_config from "../../../config/secret.js";
+import {
+  jwtMiddleware,
+  createJwtToken,
+} from "../../../config/jwtMiddleware.js";
+import baseResponse from "../../../config/baseResponseStatus.js";
+import { response, errResponse } from "../../../config/response.js";
 
 // user 뿐만 아니라 다른 도메인의 Provider와 Dao도 아래처럼 require하여 사용할 수 있습니다.
-const userProvider = require("./userProvider");
-const userDao = require("./userDao");
-
-const baseResponse = require("../../../config/baseResponseStatus");
-const { response } = require("../../../config/response");
-const { errResponse } = require("../../../config/response");
-
-const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
+import * as userProvider from "./userProvider.js";
+import * as userDao from "./userDao.js";
 
 // Service: Create, Update, Delete 비즈니스 로직 처리
 
-exports.createUser = async function (
-  username,
-  email,
-  userId,
-  password,
-  profileImgIdx
-) {
+export async function createUser(username, password, email, userId, url) {
   try {
     // 이메일 중복 확인
     // UserProvider에서 해당 이메일과 같은 User 목록을 받아서 emailRows에 저장한 후, 배열의 길이를 검사한다.
     // -> 길이가 0 이상이면 이미 해당 이메일을 갖고 있는 User가 조회된다는 의미
     const emailRows = await userProvider.emailCheck(email);
+    console.log(`emailRows: `, emailRows);
     if (emailRows.length > 0)
       return errResponse(baseResponse.SIGNUP_REDUNDANT_EMAIL);
 
     // 비밀번호 암호화
-    const hashedPassword = await crypto
-      .createHash("sha512")
-      .update(password)
-      .digest("hex");
+    const hashedPassword = await bcrypt.hash(
+      password,
+      secret_config.bcryptSaltRounds
+    );
 
     // 쿼리문에 사용할 변수 값을 배열 형태로 전달
-    const insertUserInfoParams = [
-      username,
-      hashedPassword,
-      email,
-      userId,
-      profileImgIdx,
-    ];
+    const insertUserInfoParams = [username, hashedPassword, email, userId, url];
 
-    const connection = await pool.getConnection(async (conn) => conn);
+    const connection = await promisePool.getConnection(async (conn) => conn);
 
     const userIdResult = await userDao.insertUserInfo(
       connection,
       insertUserInfoParams
     );
-    console.log(`Returned result: ${userIdResult}`);
-    logger.info(`Returned result: ${userIdResult}`);
-    logger.info(`추가된 회원 : ${userIdResult[0].insertId}`);
+    const insertUserIdx = userIdResult[0].insertId;
+    console.log("userIdResult: ", userIdResult);
+    console.log(`추가된 회원 :`, insertUserIdx);
+
     connection.release();
+    // JWT token 생성
+    const token = createJwtToken(insertUserIdx);
+
     return response(baseResponse.SUCCESS, {
-      userIdx: userIdResult[0].insertId,
+      token: token,
+      userIdx: insertUserIdx,
     });
   } catch (err) {
-    console.error(`App - createUser Service error\n: ${err.message}`);
     logger.error(`App - createUser Service error\n: ${err.message}`);
     return errResponse(baseResponse.DB_ERROR);
   }
-};
+}
 
-// DELETE user by userId
-exports.delUser = async function (userId) {
-  try {
-    const connection = await pool.getConnection(async (conn) => conn);
-
-    const delUserResult = await userDao.delUserById(connection, userId);
-    logger.info(`Returned result: ${delUserResult}`);
-    logger.info(`삭제된 회원 : ${delUserResult[0]}`);
-    return response(baseResponse.SUCCESS);
-  } catch (err) {
-    logger.error(`App - delUser Service error\n: ${err.message}`);
-    return errResponse(baseResponse.DB_ERROR);
-  }
-};
-
-// TODO: After 로그인 인증 방법 (JWT)
-exports.postSignIn = async function (email, password) {
+// login
+export async function postSignIn(email, password) {
   try {
     // 이메일 여부 확인
     const emailRows = await userProvider.emailCheck(email);
     if (emailRows.length < 1)
       return errResponse(baseResponse.SIGNIN_EMAIL_WRONG);
+    console.log("emailRows: ", emailRows);
 
-    const selectEmail = emailRows[0].email;
+    const user = emailRows[0];
+    const selectEmail = user.email;
     console.log(selectEmail);
 
-    // 비밀번호 확인 (입력한 비밀번호를 암호화한 것과 DB에 저장된 비밀번호가 일치하는 지 확인함)
-    const hashedPassword = await crypto
-      .createHash("sha512")
-      .update(password)
-      .digest("hex");
-
-    const selectUserPasswordParams = [selectEmail, hashedPassword];
-    const passwordRows = await userProvider.passwordCheck(
-      selectUserPasswordParams
-    );
-    console.log(passwordRows[0]);
-
-    if (passwordRows[0].password !== hashedPassword) {
+    // 비밀번호 확인 (입력한 비밀번호를 암호화한 것과 DB에 저장된 비밀번호가 일치하는 지 확인함
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
       return errResponse(baseResponse.SIGNIN_PASSWORD_WRONG);
     }
 
     // 계정 상태 확인
-    const userInfoRows = await userProvider.accountCheck(email);
-    console.log(userInfoRows[0]);
-
-    if (userInfoRows[0].status === "INACTIVE") {
+    if (user.status === "INACTIVE") {
       return errResponse(baseResponse.SIGNIN_INACTIVE_ACCOUNT);
-    } else if (userInfoRows[0].status === "DELETED") {
+    } else if (user.status === "DELETED") {
       return errResponse(baseResponse.SIGNIN_WITHDRAWAL_ACCOUNT);
     }
 
-    console.log(userInfoRows[0].userId); // DB의 userId
-    console.log(userInfoRows[0].userIdx);
-
     //토큰 생성 Service
-    let token = await jwt.sign(
-      {
-        userId: userInfoRows[0].userId,
-        userIdx: userInfoRows[0].userIdx,
-      }, // 토큰의 내용(payload)
-      secret_config.jwtsecret, // 비밀키
-      {
-        expiresIn: "365d",
-        subject: "userInfo",
-      } // 유효 기간 365일
-    );
+    let token = createJwtToken(user.userIdx);
 
     return response(baseResponse.SUCCESS, {
-      userId: userInfoRows[0].userId,
+      userId: user.userId,
       jwt: token,
     });
   } catch (err) {
@@ -145,23 +99,4 @@ exports.postSignIn = async function (email, password) {
     );
     return errResponse(baseResponse.DB_ERROR);
   }
-};
-
-exports.editUser = async function (userId, username) {
-  try {
-    console.log(userId);
-    const connection = await pool.getConnection(async (conn) => conn);
-    const editUserResult = await userDao.updateUserInfo(
-      connection,
-      userId,
-      username
-    );
-    console.log(editUserResult);
-    connection.release();
-
-    return response(baseResponse.SUCCESS);
-  } catch (err) {
-    logger.error(`App - editUser Service error\n: ${err.message}`);
-    return errResponse(baseResponse.DB_ERROR);
-  }
-};
+}

@@ -1,5 +1,4 @@
-const mysql = require("mysql2/promise");
-const { logger } = require("./winston");
+import * as mysql from "mysql2";
 
 // TODO: 본인의 DB 계정 입력
 const pool = mysql.createPool({
@@ -10,6 +9,5 @@ const pool = mysql.createPool({
   database: "instagram",
 });
 
-module.exports = {
-  pool: pool,
-};
+const promisePool = pool.promise();
+export default promisePool;

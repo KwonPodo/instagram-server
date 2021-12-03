@@ -1,6 +1,6 @@
 //Response로 보내줄 상태코드와 메세지 등을 이 파일에서 관리함
 
-module.exports = {
+const baseResponse = {
   // Success
   SUCCESS: { isSuccess: true, code: 1000, message: "성공" },
 
@@ -243,3 +243,5 @@ module.exports = {
   DB_ERROR: { isSuccess: false, code: 4000, message: "데이터 베이스 에러" },
   SERVER_ERROR: { isSuccess: false, code: 4001, message: "서버 에러" },
 };
+
+export default baseResponse;

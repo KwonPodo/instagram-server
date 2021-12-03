@@ -1,10 +1,9 @@
-const jwt = require("jsonwebtoken");
-const secret_config = require("./secret");
-const { response } = require("./response");
-const { errResponse } = require("./response");
-const baseResponse = require("./baseResponseStatus");
+import jwt from "jsonwebtoken";
+import secret_config from "./secret.js";
+import { response, errResponse } from "./response.js";
+import baseResponse from "./baseResponseStatus.js";
 
-const jwtMiddleware = (req, res, next) => {
+export const jwtMiddleware = (req, res, next) => {
   // read the token from header or url
   const token = req.headers["x-access-token"] || req.query.token;
   // token does not exist
@@ -33,4 +32,9 @@ const jwtMiddleware = (req, res, next) => {
   }).catch(onError);
 };
 
-module.exports = jwtMiddleware;
+export function createJwtToken(userIdx) {
+  return jwt.sign({ userIdx }, secret_config.jwtsecret, {
+    expiresIn: secret_config.jwtExpiration,
+    subject: "userInfo",
+  });
+}

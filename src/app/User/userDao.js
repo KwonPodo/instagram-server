@@ -1,4 +1,3 @@
-const { logger } = require("../../../config/winston.js");
 // 새롭게 추가한 함수를 아래 부분에서 export 해줘야 외부의 Provider, Service 등에서 사용가능합니다.
 
 // 모든 유저 조회
@@ -14,7 +13,7 @@ async function selectUser(connection) {
 // 이메일로 회원 조회
 async function selectUserEmail(connection, email) {
   const selectUserEmailQuery = `
-                SELECT username, userIdx, email, userId 
+                SELECT username, userIdx, email, userId, password, status
                 FROM User 
                 WHERE email = ?;
                 `;
@@ -47,7 +46,7 @@ async function selectUserName(connection, username) {
 // 유저 생성
 async function insertUserInfo(connection, insertUserInfoParams) {
   const insertUserInfoQuery = `
-        INSERT INTO User (username, password, email, userId, profileImgIdx)
+        INSERT INTO User (username, password, email, userId, profileImgUrl)
         VALUES (?, ?, ?, ?, ?);
     `;
   const insertUserInfoRow = await connection.query(
@@ -73,13 +72,13 @@ async function selectUserPassword(connection, selectUserPasswordParams) {
   const selectUserPasswordQuery = `
         SELECT userIdx, email, userId, password
         FROM User 
-        WHERE email = ? AND password = ?;`;
+        WHERE email = ?;`;
   const selectUserPasswordRow = await connection.query(
     selectUserPasswordQuery,
     selectUserPasswordParams
   );
 
-  return selectUserPasswordRow;
+  return selectUserPasswordRow[0];
 }
 
 // 유저 계정 상태 체크 (jwt 생성 위해 id 값도 가져온다.)
@@ -153,7 +152,8 @@ async function selectFollowStatus(connection, followerId, followingId) {
     SELECT User.userIdx
     FROM User
     WHERE userId = ?
-  );`;
+  );
+  `;
   const selectFollowStatusRow = await connection.query(
     selectFollowStatusQuery,
     [followerId, followingId]
@@ -180,7 +180,7 @@ async function unFollowByIdx(connection, followIdx) {
   const unFollowRow = await connection.query(followQuery, followIdx);
   return unFollowRow;
 }
-module.exports = {
+export {
   selectUser,
   selectUserEmail,
   selectUserId,
