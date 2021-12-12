@@ -38,3 +38,21 @@ export function createJwtToken(userIdx) {
     subject: "userInfo",
   });
 }
+
+export async function isAuth(req, res, next) {
+  try {
+    const token = req.headers["x-access-token"] || req.query.token;
+    if (!token) {
+      res.send(errResponse(baseResponse.TOKEN_EMPTY));
+    }
+    jwt.verify(token, secret_config.jwtsecret, async (err, decoded) => {
+      if (err) console.error(err);
+      console.info(`Token decoded: `, decoded);
+      req.userIdx = decoded.userIdx; // req.custom data
+      next();
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.send(errResponse(baseResponse.TOKEN_VERIFICATION_FAILURE));
+  }
+}

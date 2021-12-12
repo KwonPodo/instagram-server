@@ -2,6 +2,8 @@ import express from "express";
 import compression from "compression";
 import methodOverride from "method-override";
 import cors from "cors";
+import authRouter from "../src/app/Auth/authRoute.js";
+import postRouter from "../src/app/Post/postRoute.js";
 import userRouter from "../src/app/User/userRoute.js";
 
 export default function expressor() {
@@ -24,7 +26,9 @@ export default function expressor() {
   //require("../src/app/User/userRoute")(app);
   //require("../src/app/Post/postRoute")(app);
 
-  app.use("/app/auth", userRouter);
+  app.use("/app/auth", authRouter);
+  app.use("/app/posts", postRouter);
+  app.use("/app/users", userRouter);
 
   app.use((req, res, next) => {
     res.sendStatus(404);

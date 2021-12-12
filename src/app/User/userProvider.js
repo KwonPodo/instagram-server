@@ -1,11 +1,7 @@
-import baseResponse from "../../../config/baseResponseStatus.js";
-import { response, errResponse } from "../../../config/response.js";
-import { logger } from "../../../config/winston.js";
-import promisePool from "../../../config/database.js";
-
 import * as userDao from "./userDao.js";
-
-// Provider: Read 비즈니스 로직 처리
+import { response, errResponse } from "../../../config/response.js";
+import baseResponse from "../../../config/baseResponseStatus.js";
+import promisePool from "../../../config/database.js";
 
 export async function retrieveUser(userId) {
   const connection = await promisePool.getConnection(async (conn) => conn);
@@ -13,32 +9,88 @@ export async function retrieveUser(userId) {
 
   connection.release();
 
+  if (userResult.length === 0) {
+    return errResponse(baseResponse.USER_USERID_NOT_EXIST);
+  }
+
   return userResult[0]; // 한 명의 유저 정보만을 불러오므로 배열 타입을 리턴하는 게 아닌 0번 인덱스를 파싱해서 오브젝트 타입 리턴
 }
 
-export async function emailCheck(email) {
-  const connection = await promisePool.getConnection(async (conn) => conn);
-  const emailCheckResult = await userDao.selectUserEmail(connection, email);
-  connection.release();
+export async function getFollowing(userIdx) {
+  try {
+    // Create DB Connection
+    const connection = await promisePool.getConnection(async (conn) => conn);
 
-  return emailCheckResult;
+    const followingRow = await userDao.selectFollowing(connection, userIdx);
+    console.log("followingRow: ", followingRow);
+
+    if (followingRow.length === 0) {
+      return errResponse(baseResponse.FOLLOWEE_LIST_EMPTY);
+    }
+
+    const resultInfo = [];
+
+    for (let following of followingRow) {
+      console.log("following: ", following);
+
+      const followingUserInfo = await userDao.selectUserIdx(
+        connection,
+        following.followingIdx
+      );
+
+      const followStatus = following.followStatus;
+      const addInfo = { followStatus, ...followingUserInfo[0] };
+      resultInfo.push(addInfo);
+
+      console.log("addInfo: ", addInfo);
+    }
+    console.log("resultInfo: ", resultInfo);
+
+    // Release DB Connection
+    connection.release();
+
+    return response(baseResponse.SUCCESS, resultInfo);
+  } catch (error) {
+    console.log(error.message);
+    return errResponse(baseResponse.DB_ERROR);
+  }
 }
 
-export async function passwordCheck(selectUserPasswordParams) {
-  const connection = await promisePool.getConnection(async (conn) => conn);
-  // 쿼리문에 여러개의 인자를 전달할 때 selectUserPasswordParams와 같이 사용합니다.
-  const passwordCheckResult = await userDao.selectUserPassword(
-    connection,
-    selectUserPasswordParams
-  );
-  connection.release();
-  return passwordCheckResult;
-}
+export async function getFollowers(userIdx) {
+  try {
+    // Create DB Connection
+    const connection = await promisePool.getConnection(async (conn) => conn);
 
-export async function accountCheck(email) {
-  const connection = await promisePool.getConnection(async (conn) => conn);
-  const userAccountResult = await userDao.selectUserAccount(connection, email);
-  connection.release();
+    const followersRow = await userDao.selectFollowers(connection, userIdx);
 
-  return userAccountResult;
+    if (followersRow.length === 0) {
+      return errResponse(baseResponse.FOLLOWER_LIST_EMPTY);
+    }
+
+    const resultInfo = [];
+
+    for (let follower of followersRow) {
+      console.log("follower: ", follower);
+
+      const followerInfo = await userDao.selectUserIdx(
+        connection,
+        follower.followerIdx
+      );
+      const followStatus = follower.followStatus;
+      const addInfo = { followStatus, ...followerInfo[0] };
+      resultInfo.push(addInfo);
+
+      console.log("followerInfo: ", followerInfo);
+      console.log("addInfo: ", addInfo);
+    }
+    console.log("resultInfo: ", resultInfo);
+
+    // Release DB Connection
+    connection.release();
+
+    return response(baseResponse.SUCCESS, resultInfo);
+  } catch (error) {
+    console.log(error.message);
+    return errResponse(baseResponse.DB_ERROR);
+  }
 }

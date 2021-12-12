@@ -1,50 +1,72 @@
 import * as userProvider from "./userProvider.js";
 import * as userService from "./userService.js";
-import baseResponse from "../../../config/baseResponseStatus.js";
 import { response, errResponse } from "../../../config/response.js";
+import baseResponse from "../../../config/baseResponseStatus.js";
 
 /**
- * API No. 0
- * API Name : 테스트 API
- * [GET] /app/test
+ * API No. 5.1
+ * API Name : 팔로잉 유저 조회 API
+ * [GET] /app/users/following
  */
-export async function getTest(req, res) {
-  return res.send(response(baseResponse.SUCCESS));
+export async function getFollowing(req, res) {
+  const userIdx = req.userIdx;
+
+  const result = await userProvider.getFollowing(userIdx);
+
+  return res.json(result);
 }
 
 /**
- * API No. 1.1
- * API Name : 유저 생성 (회원가입) API
- * [POST] /app/users
+ * API No. 5.2
+ * API Name : 팔로워 유저 조회 API
+ * [GET] /app/users/followers
  */
-export async function create(req, res) {
-  /**
-   * Body: username, email, userId, password, url
-   */
-  const { username, password, email, userId, url } = req.body;
+export async function getFollowers(req, res) {
+  const userIdx = req.userIdx;
 
-  // createUser 함수 실행을 통한 결과 값을 signUpResponse에 저장
-  const signUpResponse = await userService.createUser(
-    username,
-    password,
-    email,
-    userId,
-    url
-  );
+  const result = await userProvider.getFollowers(userIdx);
 
-  // signUpResponse 값을 json으로 전달
-  return res.status(201).json(signUpResponse);
+  return res.json(result);
 }
 
 /**
- * API No. 1.2
- * API Name : 로그인 API
- * [POST] /app/login
- * body : email, passsword
+ * API No. 5.3
+ * API Name : 팔로우 API
+ * [PUT] /app/users/:userId
  */
-export async function login(req, res) {
-  const { email, password } = req.body;
-  const signInResponse = await userService.postSignIn(email, password);
+export async function follow(req, res) {
+  const followerIdx = req.userIdx;
+  const followingId = req.params.userId;
 
-  return res.send(signInResponse);
+  // Validation
+  // Check if following User exists
+  const followingUserInfo = await userProvider.retrieveUser(followingId);
+  console.log("followingUserInfo: ", followingUserInfo);
+
+  const followingUserIdx = followingUserInfo.userIdx;
+
+  const result = await userService.follow(followerIdx, followingUserIdx);
+
+  return res.json(result);
+}
+
+/**
+ * API No. 5.4
+ * API Name : 언팔로우 API
+ * [PATCH] /app/users/:userId
+ */
+export async function unfollow(req, res) {
+  const followerIdx = req.userIdx;
+  const followingId = req.params.userId;
+
+  // Validation
+  // Check if following User exists
+  const followingUserInfo = await userProvider.retrieveUser(followingId);
+  console.log("followingUserInfo: ", followingUserInfo);
+
+  const followingUserIdx = followingUserInfo.userIdx;
+
+  const result = await userService.unfollow(followerIdx, followingUserIdx);
+
+  return res.json(result);
 }

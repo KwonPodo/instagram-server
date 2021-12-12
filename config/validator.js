@@ -42,3 +42,14 @@ export const signup = [
   credential,
   validationErrCatch,
 ];
+
+export const edit = [
+  body("userId").trim().notEmpty().withMessage(`userId Empty`),
+  body("username").trim().notEmpty().withMessage("Username is empty"),
+  body("url")
+    .trim()
+    .isURL()
+    .withMessage(`Invalid URL`)
+    .optional({ nullable: true, checkFalsy: true }),
+  validationErrCatch,
+];
