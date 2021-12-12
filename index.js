@@ -1,4 +1,3 @@
-import process from "process";
 import expressor from "./config/express.js";
 import { logger } from "./config/winston.js";
 
