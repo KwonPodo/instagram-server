@@ -90,3 +90,63 @@ export async function getVisualById(postIdx) {
     return errResponse(baseResponse.DB_ERROR);
   }
 }
+
+export async function getAllComments(userIdx, postIdx) {
+  try {
+    // Create DB Connection
+    const connection = await promisePool.getConnection(async (conn) => conn);
+
+    const commentsRow = await postDao.selectAllComments(connection, postIdx);
+    console.log("commentsRow: ", commentsRow);
+
+    const commentResult = [];
+    for (let comment of commentsRow) {
+      console.log("comment: ", comment);
+      const userInfo = await userProvider.retrieveUserIdx(comment.fromUserIdx);
+      console.log("userInfo: ", userInfo);
+
+      const textContent = comment.textContent;
+      const createdAt = comment.createdAt;
+      const updatedAt = comment.updatedAt;
+
+      const addInfo = { ...userInfo, textContent, createdAt, updatedAt };
+      commentResult.push(addInfo);
+    }
+
+    // Release DB Connection
+    connection.release();
+
+    return commentResult;
+  } catch (error) {
+    console.log(error);
+    return errResponse(baseResponse.DB_ERROR);
+  }
+}
+
+export async function getComment(userIdx, postIdx, commentIdx) {
+  try {
+    // Create DB Connection
+    const connection = await promisePool.getConnection(async (conn) => conn);
+
+    const commentResult = await postDao.selectComment(connection, commentIdx);
+    const userInfo = await userProvider.retrieveUserIdx(
+      commentResult.fromUserIdx
+    );
+
+    const textContent = commentResult.textContent;
+    const createdAt = commentResult.createdAt;
+    const updatedAt = commentResult.updatedAt;
+
+    const addInfo = { ...userInfo, textContent, createdAt, updatedAt };
+
+    // Release DB Connection
+    connection.release();
+
+    console.log("commentResult: ", commentResult);
+
+    return addInfo;
+  } catch (error) {
+    console.log(error);
+    return errResponse(baseResponse.DB_ERROR);
+  }
+}

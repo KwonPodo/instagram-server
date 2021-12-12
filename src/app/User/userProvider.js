@@ -3,6 +3,18 @@ import { response, errResponse } from "../../../config/response.js";
 import baseResponse from "../../../config/baseResponseStatus.js";
 import promisePool from "../../../config/database.js";
 
+export async function retrieveUserIdx(userIdx) {
+  const connection = await promisePool.getConnection(async (conn) => conn);
+  const userResult = await userDao.selectUserIdx(connection, userIdx);
+
+  if (userResult.length === 0) {
+    return errResponse(baseResponse.USER_USERIDX_NOT_EXIST);
+  }
+  connection.release();
+
+  return userResult[0];
+}
+
 export async function retrieveUser(userId) {
   const connection = await promisePool.getConnection(async (conn) => conn);
   const userResult = await userDao.selectUserId(connection, userId);

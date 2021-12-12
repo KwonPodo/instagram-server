@@ -251,6 +251,12 @@ const baseResponse = {
     message: "이미 언팔로우한 계정입니다.",
   },
 
+  COMMENT_NOT_EXIST: {
+    isSuccess: false,
+    code: 3011,
+    message: "해당하는 댓글이 삭제되었거나 없습니다.",
+  },
+
   //Connection, Transaction 등의 서버 오류
   DB_ERROR: { isSuccess: false, code: 4000, message: "데이터 베이스 에러" },
   SERVER_ERROR: { isSuccess: false, code: 4001, message: "서버 에러" },

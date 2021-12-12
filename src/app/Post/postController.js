@@ -121,3 +121,86 @@ export async function edit(req, res) {
 
   return res.send(response(baseResponse.SUCCESS));
 }
+
+/**
+ * API No. 4.5
+ * API Name : 게시물 전체 댓글 조회(+검색) API
+ * [GET] /app/posts/:postIdx/comments/:commentIdx
+ */
+export async function getComments(req, res) {
+  const userIdx = req.userIdx;
+  const postIdx = req.params.postIdx;
+  const commentIdx = req.query.commentIdx;
+
+  // Query String에 commentIdx가 없다면, 전체 댓글 조회
+  if (!commentIdx) {
+    const commentsResult = await postProvider.getAllComments(userIdx, postIdx);
+
+    console.log("commentResult: ", commentsResult);
+
+    return res.json(response(baseResponse.SUCCESS, commentsResult));
+  }
+
+  // Query String에 commentIdx가 있다면 해당 comment 조회
+  const commentResult = await postProvider.getComment(
+    userIdx,
+    postIdx,
+    commentIdx
+  );
+
+  return res.json(response(baseResponse.SUCCESS, commentResult));
+}
+
+/**
+ * API No. 4.6
+ * API Name : 댓글 생성 API
+ * [POST] /app/posts/:postIdx/comments
+ */
+export async function createComment(req, res) {
+  const userIdx = req.userIdx;
+  const postIdx = req.params.postIdx;
+  const textContent = req.body.textContent;
+
+  if (!textContent) {
+    return res.json(errResponse(baseResponse.POST_TEXTCONTENT_EMPTY));
+  }
+
+  const result = await postService.createComment(userIdx, postIdx, textContent);
+
+  return res.json(result);
+}
+
+/**
+ * API No. 4.7
+ * API Name : 댓글 삭제 API
+ * [PATCH] /app/posts/:postIdx/comments/:commentIdx
+ */
+export async function delComment(req, res) {
+  const userIdx = req.userIdx;
+  const postIdx = req.params.postIdx;
+  const commentIdx = req.params.commentIdx;
+
+  const result = await postService.delComment(userIdx, postIdx, commentIdx);
+
+  return res.json(result);
+}
+
+/**
+ * API No. 4.8
+ * API Name : 댓글 수정 API
+ * [PATCH] /app/posts/:postIdx/comments/:commentIdx
+ */
+export async function editComment(req, res) {
+  const userIdx = req.userIdx;
+  const postIdx = req.params.postIdx;
+  const textContent = req.body.textContent;
+  const commentIdx = req.params.commentIdx;
+
+  const result = await postService.editComment(
+    userIdx,
+    textContent,
+    commentIdx
+  );
+
+  return res.json(result);
+}

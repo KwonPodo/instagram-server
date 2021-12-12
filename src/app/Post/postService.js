@@ -87,3 +87,75 @@ export async function edit(textContent, url, postIdx) {
     return errResponse(baseResponse.DB_ERROR);
   }
 }
+
+export async function createComment(userIdx, postIdx, textContent) {
+  try {
+    // Create DB Connection
+    const connection = await promisePool.getConnection(async (conn) => conn);
+
+    const createInfo = await postDao.insertComment(
+      connection,
+      userIdx,
+      postIdx,
+      textContent
+    );
+
+    console.log("createInfo: ", createInfo);
+
+    // Release DB Connection
+    connection.release();
+
+    return response(baseResponse.SUCCESS);
+  } catch (error) {
+    console.log(error);
+    return errResponse(baseResponse.DB_ERROR);
+  }
+}
+
+export async function delComment(userIdx, postIdx, commentIdx) {
+  try {
+    // Create DB Connection
+    const connection = await promisePool.getConnection(async (conn) => conn);
+
+    // Validation
+    // Comment 유무 확인
+    const commentInfo = await postDao.selectComment(connection, commentIdx);
+    console.log("commentInfo: ", commentInfo);
+
+    if (commentInfo[0].length === 0) {
+      return errResponse(baseResponse.COMMENT_NOT_EXIST);
+    }
+
+    const delInfo = await postDao.delComment(connection, commentIdx);
+
+    // Release DB Connection
+    connection.release();
+
+    return response(baseResponse.SUCCESS);
+  } catch (error) {
+    console.log(error);
+    return errResponse(baseResponse.DB_ERROR);
+  }
+}
+
+export async function editComment(userIdx, textContent, commentIdx) {
+  try {
+    // Create DB Connection
+    const connection = await promisePool.getConnection(async (conn) => conn);
+
+    const editInfo = await postDao.updateComment(
+      connection,
+      textContent,
+      commentIdx
+    );
+    console.log("editInfo: ", editInfo);
+
+    // Release DB Connection
+    connection.release();
+
+    return response(baseResponse.SUCCESS);
+  } catch (error) {
+    console.log(error);
+    return errResponse(baseResponse.DB_ERROR);
+  }
+}
